@@ -104,11 +104,22 @@ journalctl --user -u telegram-codex-bot -f
 
 ## 后续更新代码
 
-如果 bot 已经部署过，之后只需要在服务器上 pull 最新代码并重启服务：
+如果 bot 已经部署过，之后先在服务器上 pull 最新代码：
 
 ```bash
 cd ~/telegram-codex-bot/telegram-codex-server-bot
 git pull
+```
+
+如果只是改了 `bot.py` 这类代码文件，不需要进入 venv，也不需要重新安装依赖，直接重启服务：
+
+```bash
+systemctl --user restart telegram-codex-bot
+```
+
+如果 `pyproject.toml` 里的依赖变了，再进入 venv 并重新安装：
+
+```bash
 . .venv/bin/activate
 pip install -e .
 systemctl --user restart telegram-codex-bot
