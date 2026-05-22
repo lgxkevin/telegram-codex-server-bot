@@ -19,7 +19,10 @@
 ## 本地/服务器安装
 
 ```bash
-cd /opt/telegram-codex-bot
+mkdir -p ~/telegram-codex-bot
+cd ~/telegram-codex-bot
+git clone https://github.com/lgxkevin/telegram-codex-server-bot.git
+cd telegram-codex-server-bot
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e .
@@ -62,13 +65,13 @@ AI_MODEL=gpt-4o-mini
 codex exec "hello"
 ```
 
-如果你用 `telegrambot` 这个 systemd 用户运行服务，就需要让 Codex CLI 的认证、配置和目标项目目录对这个用户可用。更简单的做法是把 `systemd/telegram-codex-bot.service` 里的 `User=` 改成你平时已经登录 Codex CLI 的 Linux 用户。
+当前 service 模板默认按 user service 运行，也就是使用你自己的 Linux 用户，路径是 `~/telegram-codex-bot/telegram-codex-server-bot`。
 
 然后配置：
 
 ```bash
 CODEX_COMMAND_TEMPLATE=codex exec {prompt}
-CODEX_WORKDIR=/opt/telegram-codex-bot/workdir
+CODEX_WORKDIR=workdir
 CODEX_TIMEOUT_SECONDS=300
 ```
 
@@ -76,26 +79,27 @@ CODEX_TIMEOUT_SECONDS=300
 
 ## systemd 部署
 
-创建运行用户：
+这个仓库里的 service 模板是 user service，适合你的目录：
 
 ```bash
-sudo useradd --system --home /opt/telegram-codex-bot --shell /usr/sbin/nologin telegrambot
-sudo chown -R telegrambot:telegrambot /opt/telegram-codex-bot
+~/telegram-codex-bot/telegram-codex-server-bot
 ```
 
 安装 service：
 
 ```bash
-sudo cp systemd/telegram-codex-bot.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now telegram-codex-bot
-sudo systemctl status telegram-codex-bot
+mkdir -p ~/.config/systemd/user
+cp systemd/telegram-codex-bot.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now telegram-codex-bot
+systemctl --user status telegram-codex-bot
+sudo loginctl enable-linger "$USER"
 ```
 
 查看日志：
 
 ```bash
-sudo journalctl -u telegram-codex-bot -f
+journalctl --user -u telegram-codex-bot -f
 ```
 
 ## Telegram 命令

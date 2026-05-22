@@ -16,6 +16,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 
 SHELL_META_RE = re.compile(r"[;&|><`$\\\n]")
+PROJECT_DIR = Path(__file__).resolve().parent
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,13 @@ def parse_prefixes(raw: str) -> list[list[str]]:
     return prefixes
 
 
+def resolve_path(raw: str | None, default: Path) -> Path:
+    path = Path(raw).expanduser() if raw else default
+    if not path.is_absolute():
+        path = PROJECT_DIR / path
+    return path
+
+
 def load_settings() -> Settings:
     load_dotenv()
     telegram_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
@@ -79,8 +87,8 @@ def load_settings() -> Settings:
     if not allowed_user_ids:
         raise RuntimeError("TELEGRAM_ALLOWED_USER_IDS is required")
 
-    bot_workdir = Path(os.getenv("BOT_WORKDIR", "/opt/telegram-codex-bot/workdir")).expanduser()
-    codex_workdir = Path(os.getenv("CODEX_WORKDIR", str(bot_workdir))).expanduser()
+    bot_workdir = resolve_path(os.getenv("BOT_WORKDIR"), PROJECT_DIR / "workdir")
+    codex_workdir = resolve_path(os.getenv("CODEX_WORKDIR"), bot_workdir)
 
     return Settings(
         telegram_token=telegram_token,
@@ -109,7 +117,7 @@ def load_settings() -> Settings:
 
 
 SETTINGS = load_settings()
-DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_DIR = PROJECT_DIR / "data"
 CODEX_SESSIONS_DIR = DATA_DIR / "codex_sessions"
 
 
