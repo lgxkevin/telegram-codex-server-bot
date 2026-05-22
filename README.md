@@ -102,6 +102,27 @@ sudo loginctl enable-linger "$USER"
 journalctl --user -u telegram-codex-bot -f
 ```
 
+## 后续更新代码
+
+如果 bot 已经部署过，之后只需要在服务器上 pull 最新代码并重启服务：
+
+```bash
+cd ~/telegram-codex-bot/telegram-codex-server-bot
+git pull
+. .venv/bin/activate
+pip install -e .
+systemctl --user restart telegram-codex-bot
+```
+
+如果这次更新改了 `systemd/telegram-codex-bot.service`，还需要重新复制 service 并 reload：
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp systemd/telegram-codex-bot.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user restart telegram-codex-bot
+```
+
 ## Telegram 命令
 
 ```text
