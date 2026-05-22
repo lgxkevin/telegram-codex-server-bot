@@ -1,0 +1,18 @@
+[Unit]
+Description=Telegram Codex Server Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/telegram-codex-bot
+EnvironmentFile=/opt/telegram-codex-bot/.env
+ExecStart=/opt/telegram-codex-bot/.venv/bin/python /opt/telegram-codex-bot/bot.py
+Restart=always
+RestartSec=5
+User=telegrambot
+Group=telegrambot
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,11 @@
+[project]
+name = "telegram-codex-server-bot"
+version = "0.1.0"
+description = "Telegram bot for guarded Linux commands, AI API calls, and Codex CLI interaction."
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.27,<1",
+    "python-dotenv>=1.0,<2",
+    "python-telegram-bot>=21,<23",
+]
+
