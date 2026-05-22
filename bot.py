@@ -16,6 +16,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 
 SHELL_META_RE = re.compile(r"[;&|><`$\\\n]")
+CODEX_TOKENS_RE = re.compile(r"(?m)^tokens used\s*\n\s*([0-9,]+)\s*$")
 PROJECT_DIR = Path(__file__).resolve().parent
 
 
@@ -208,6 +209,34 @@ def format_process_result(returncode: int | None, output: str) -> str:
     return f"{status}\n\n{body}"
 
 
+def parse_codex_output(output: str) -> tuple[str | None, str]:
+    text = output.strip()
+    matches = list(CODEX_TOKENS_RE.finditer(text))
+    if not matches:
+        return None, text
+
+    match = matches[-1]
+    tokens_used = match.group(1).strip()
+    final_reply = text[match.end() :].strip()
+    return tokens_used, final_reply
+
+
+def format_codex_result(returncode: int | None, output: str) -> str:
+    if returncode is None:
+        return format_process_result(returncode, output)
+
+    tokens_used, final_reply = parse_codex_output(output)
+    if returncode != 0:
+        body = final_reply or output.strip() or "(no output)"
+        return f"exit={returncode}\n\n{body}"
+
+    if tokens_used and final_reply:
+        return f"tokens used: {tokens_used}\n\n{final_reply}"
+    if final_reply:
+        return final_reply
+    return output.strip() or "(no output)"
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if await reject_if_unauthorized(update):
         return
@@ -335,15 +364,14 @@ async def codex_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     history = read_session(update.effective_chat.id)
     wrapped_prompt = (
-        "You are talking with me through a Telegram bot on my Linux server.\n"
-        "Use the session transcript for context when it is relevant.\n\n"
-        f"Session transcript:\n{history or '(empty)'}\n\n"
-        f"Current user message:\n{prompt}"
+        f"Previous conversation:\n{history or '(empty)'}\n\n"
+        f"User request:\n{prompt}"
     )
     command = render_codex_command(wrapped_prompt)
     returncode, output = await run_shell(command, SETTINGS.codex_workdir, SETTINGS.codex_timeout_seconds)
-    result = format_process_result(returncode, output)
-    append_session(update.effective_chat.id, prompt, output)
+    result = format_codex_result(returncode, output)
+    _, final_reply = parse_codex_output(output)
+    append_session(update.effective_chat.id, prompt, final_reply or output)
     await send_text(update, result, as_pre=True)
 
 
